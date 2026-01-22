@@ -25,6 +25,15 @@ import auditRoutes from './routes/audit.routes.js';
 
 const app = express();
 
+// Trust proxy (required for Railway/Vercel/Heroku)
+app.set('trust proxy', 1);
+
+// Global request logger for production debugging
+app.use((req, res, next) => {
+  console.log(`[INCOMING] ${req.method} ${req.originalUrl} | Origin: ${req.get('origin') || 'no-origin'}`);
+  next();
+});
+
 app.use(helmet());
 app.use(
   cors({
