@@ -27,7 +27,7 @@ const logger = winston.createLogger({
       : combine(colorize({ all: true }), align(), logFormat)
   ),
   defaultMeta: { service: 'pos-backend' },
-  transports: [
+  transports: config.nodeEnv === 'production' ? [] : [
     // Write all logs with level 'error' and below to 'error.log'
     new winston.transports.File({
       filename: path.join(__dirname, '../../logs/error.log'),
