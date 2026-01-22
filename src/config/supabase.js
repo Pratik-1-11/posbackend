@@ -23,7 +23,7 @@ if (!supabaseKey || supabaseKey.trim() === '') {
 }
 
 // Prevent accidental use of ANON key (security check)
-if (supabaseKey.includes('anon') || supabaseKey.startsWith('eyJhbG')) {
+if (supabaseKey.includes('anon')) {
     console.error('🚨 CRITICAL ERROR: You appear to be using SUPABASE_ANON_KEY instead of SERVICE_ROLE_KEY');
     console.error('   Backend MUST use SERVICE_ROLE_KEY for admin operations');
     console.error('   Current key starts with:', supabaseKey.substring(0, 20) + '...');
