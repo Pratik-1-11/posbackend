@@ -77,6 +77,14 @@ const authLimiter = rateLimit({
   }
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'POS API is running',
+    environment: config.nodeEnv,
+    version: '1.0.0'
+  });
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });

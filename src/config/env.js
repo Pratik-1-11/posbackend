@@ -43,7 +43,10 @@ export const config = {
   cors: {
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, same-origin)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log('[CORS] Internal/Non-browser request (no origin)');
+        return callback(null, true);
+      }
 
       // Whitelist of allowed origins
       const allowedOrigins = [
@@ -53,11 +56,15 @@ export const config = {
         process.env.NODE_ENV === 'development' && 'http://127.0.0.1:5173',
       ].filter(Boolean);
 
-      if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] Request from: ${origin}`);
+      console.log(`[CORS] Allowed: ${JSON.stringify(allowedOrigins)}`);
+
+      if (allowedOrigins.includes(origin) || allowedOrigins.some(ao => origin.startsWith(ao))) {
+        console.log('[CORS] Origin allowed');
         callback(null, true);
       } else {
         console.warn('[CORS] Blocked request from unauthorized origin:', origin);
-        callback(new Error('Not allowed by CORS policy'));
+        callback(new Error(`Not allowed by CORS policy. Origin: ${origin}`));
       }
     },
     credentials: true

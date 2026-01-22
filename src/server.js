@@ -4,6 +4,15 @@ import app from './app.js';
 
 const httpServer = createServer(app);
 
+console.log('--- Environment Check ---');
+console.log('PORT:', process.env.PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'PRESENT' : 'MISSING');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'PRESENT' : 'MISSING');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'PRESENT' : 'MISSING');
+console.log('-------------------------');
+
 // Start server
 const startServer = async () => {
   try {
