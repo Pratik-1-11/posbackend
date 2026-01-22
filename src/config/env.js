@@ -10,6 +10,21 @@ dotenv.config({
   path: path.join(__dirname, '../../.env')
 });
 
+// ============================================================================
+// PRODUCTION DIAGNOSTICS: Move to the first imported file (Fix #15)
+// ============================================================================
+if (process.env.NODE_ENV === 'production') {
+  console.log('--- [Production] Boot Audit ---');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Node Version:', process.version);
+  console.log('PORT:', process.env.PORT || 'NOT_SET (Defaulting to 5000)');
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'FOUND (Length: ' + process.env.DATABASE_URL.length + ')' : 'MISSING');
+  console.log('SUPABASE_URL:', process.env.SUPABASE_URL || 'MISSING');
+  console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'FOUND (Starts with: ' + process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10) + '...)' : 'MISSING');
+  console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'FOUND' : 'MISSING');
+  console.log('-------------------------------');
+}
+
 const env = process.env.NODE_ENV || 'development';
 
 export const config = {

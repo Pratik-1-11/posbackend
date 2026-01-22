@@ -23,11 +23,18 @@ if (!supabaseKey || supabaseKey.trim() === '') {
 }
 
 // Prevent accidental use of ANON key (security check)
-if (supabaseKey.includes('anon')) {
-    console.error('🚨 CRITICAL ERROR: You appear to be using SUPABASE_ANON_KEY instead of SERVICE_ROLE_KEY');
+// Standard Supabase anon keys often contains 'anon' in their JWT payload or the user might have named it so.
+// We check if it matches the actual anon key variable if provided.
+if (process.env.SUPABASE_ANON_KEY && supabaseKey === process.env.SUPABASE_ANON_KEY) {
+    console.error('🚨 CRITICAL ERROR: SUPABASE_SERVICE_ROLE_KEY is identical to SUPABASE_ANON_KEY');
     console.error('   Backend MUST use SERVICE_ROLE_KEY for admin operations');
-    console.error('   Current key starts with:', supabaseKey.substring(0, 20) + '...');
     process.exit(1);
+}
+
+// Fallback hint if the key definitely looks like a public key
+if (supabaseKey.toLowerCase().includes('anon') && supabaseKey.length < 150) {
+    console.warn('⚠️ WARNING: Your SUPABASE_SERVICE_ROLE_KEY contains "anon" and is short.');
+    console.warn('   Please ensure you are using the Service Role Key, not the Anon/Public key.');
 }
 
 // Validate key format (basic check)
