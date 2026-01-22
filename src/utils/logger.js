@@ -16,27 +16,27 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 
 // Create logger instance
 const logger = winston.createLogger({
-  level: config.nodeEnv === 'production' ? 'info' : 'debug',  
+  level: config.nodeEnv === 'production' ? 'info' : 'debug',
   format: combine(
     timestamp({
       format: 'YYYY-MM-DD HH:mm:ss',
     }),
     winston.format.errors({ stack: true }),
-    config.nodeEnv === 'production' 
-      ? winston.format.json() 
+    config.nodeEnv === 'production'
+      ? winston.format.json()
       : combine(colorize({ all: true }), align(), logFormat)
   ),
   defaultMeta: { service: 'pos-backend' },
   transports: [
     // Write all logs with level 'error' and below to 'error.log'
-    new winston.transports.File({ 
-      filename: path.join(__dirname, '../../logs/error.log'), 
+    new winston.transports.File({
+      filename: path.join(__dirname, '../../logs/error.log'),
       level: 'error',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
     // Write all logs with level 'info' and below to 'combined.log'
-    new winston.transports.File({ 
+    new winston.transports.File({
       filename: path.join(__dirname, '../../logs/combined.log'),
       maxsize: 10485760, // 10MB
       maxFiles: 5,
@@ -45,11 +45,17 @@ const logger = winston.createLogger({
   exitOnError: false, // Don't exit on handled exceptions
 });
 
-// If we're not in production, also log to console
+// Always add console logger for observability in all environments
+logger.add(new winston.transports.Console({
+  format: config.nodeEnv === 'production'
+    ? winston.format.json()
+    : combine(colorize({ all: true }), align(), logFormat),
+}));
+
+// Add file transports only if we are not in production or if needed
+// Note: In many container environments like Railway/Vercel, file logging is discouraged
 if (config.nodeEnv !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: combine(colorize({ all: true }), align(), logFormat),
-  }));
+  // We already have file transports defined in the constructor
 }
 
 // Create a stream object with a 'write' function that will be used by `morgan`

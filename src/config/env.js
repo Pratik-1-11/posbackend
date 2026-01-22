@@ -84,7 +84,8 @@ const requiredEnvVars = ['JWT_SECRET'];
 if (env === 'production') {
   const missingVars = requiredEnvVars.filter((key) => !process.env[key]);
   if (missingVars.length > 0) {
-    console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    console.error(`🚨 CRITICAL ERROR: Missing required environment variables: ${missingVars.join(', ')}`);
+    console.error('   Please set these in your hosting platform (Railway/Render/etc.)');
     process.exit(1);
   }
 }

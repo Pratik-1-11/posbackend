@@ -7,25 +7,35 @@ const httpServer = createServer(app);
 // Start server
 const startServer = async () => {
   try {
-    httpServer.listen(config.port, () => {
-      console.log(`Server running in ${config.nodeEnv} mode on port ${config.port}`);
-      console.log('Connected to Supabase');
+    console.log(`Starting server in ${config.nodeEnv} mode...`);
+    console.log(`Attempting to listen on port ${config.port}...`);
+
+    httpServer.listen(config.port, '0.0.0.0', () => {
+      console.log(`🚀 Server successfully running on port ${config.port}`);
+      console.log(`   Health check: http://localhost:${config.port}/health`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('🚨 Failed to start server:', error);
     process.exit(1);
   }
 };
 
-startServer();
+startServer().catch(err => {
+  console.error('🚨 Top-level startServer failure:', err);
+  process.exit(1);
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error('🚨 UNHANDLED REJECTION! 💥');
   console.error(err);
-  httpServer.close(() => {
+  if (httpServer.listening) {
+    httpServer.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 process.on('SIGTERM', () => {
