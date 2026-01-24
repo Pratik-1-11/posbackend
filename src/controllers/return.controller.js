@@ -32,7 +32,8 @@ export const createReturn = async (req, res, next) => {
             p_sale_id: saleId,
             p_items: items,
             p_reason: reason || 'N/A',
-            p_cashier_id: cashierId || req.user.id
+            p_cashier_id: cashierId || req.user.id,
+            p_tenant_id: tenantId // Pass tenant context explicitly
         });
 
         if (returnError) {
