@@ -261,7 +261,7 @@ export const getVatReport = async (req, res, next) => {
             // Fallback if view doesn't exist yet
             const { data: fallback, error: err2 } = await supabase
                 .from('sales')
-                .select('invoice_number, created_at, customer_name, sub_total, discount_amount, taxable_amount, vat_amount, total_amount, payment_method, status')
+                .select('invoice_number, created_at, customer_name, customer_pan, sub_total, discount_amount, taxable_amount, vat_amount, total_amount, payment_method, status')
                 .eq('tenant_id', tenantId)
                 .gte('created_at', startDate)
                 .lte('created_at', endDate);
