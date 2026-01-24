@@ -40,6 +40,9 @@ CREATE POLICY return_items_isolation ON public.return_items
     WITH CHECK (tenant_id = public.get_user_tenant_id());
 
 -- 4. RPC for Processing Return
+DROP FUNCTION IF EXISTS public.process_pos_return(UUID, JSONB, TEXT, UUID);
+DROP FUNCTION IF EXISTS public.process_pos_return(TEXT, JSONB, TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.process_pos_return(
     p_sale_id TEXT,
     p_items JSONB,
