@@ -313,3 +313,71 @@ export const getProductPerformance = async (req, res, next) => {
         next(err);
     }
 };
+export const getDashboardSummary = async (req, res, next) => {
+    try {
+        const tenantId = req.tenant.id;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString();
+
+        // RUN ALL QUERIES IN PARALLEL ON THE SERVER
+        const [
+            dailySalesResult,
+            healthResult,
+            performanceResult
+        ] = await Promise.all([
+            // 1. Daily Sales
+            supabase.from('daily_sales_summary')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .limit(7),
+
+            // 2. Health Metrics
+            Promise.all([
+                supabase.from('sales').select('cashier_id').eq('tenant_id', tenantId).gte('created_at', todayStr),
+                supabase.from('products').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_active', true).lt('stock_quantity', 10),
+                supabase.from('customers').select('total_credit').eq('tenant_id', tenantId).gt('total_credit', 0),
+                supabase.from('sales').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['cancelled', 'failed']).gte('created_at', todayStr)
+            ]),
+
+            // 3. Performance
+            Promise.all([
+                supabase.from('product_performance').select('*').eq('tenant_id', tenantId).limit(5),
+                supabase.from('sales').select('payment_method, total_amount')
+                    .eq('tenant_id', tenantId)
+                    .eq('status', 'completed')
+                    .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+            ])
+        ]);
+
+        // Process Health
+        const uniqueCashiers = new Set(healthResult[0].data?.map(s => s.cashier_id)).size;
+        const totalPendingCredits = healthResult[2].data?.reduce((sum, c) => sum + Number(c.total_credit), 0) || 0;
+
+        // Process Performance
+        const split = performanceResult[1].data?.reduce((acc, s) => {
+            const method = s.payment_method || 'unknown';
+            acc[method] = (acc[method] || 0) + Number(s.total_amount);
+            return acc;
+        }, {}) || {};
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: {
+                dailySales: dailySalesResult.data || [],
+                health: {
+                    activeCashiers: uniqueCashiers,
+                    lowStockAlerts: healthResult[1].count || 0,
+                    pendingCredits: totalPendingCredits,
+                    failedTransactions: healthResult[3].count || 0
+                },
+                performance: {
+                    topProducts: performanceResult[0].data || [],
+                    paymentSplit: split
+                }
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
