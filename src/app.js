@@ -20,6 +20,7 @@ import customerRoutes from './routes/customer.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import returnRoutes from './routes/return.routes.js';
 
 
 
@@ -113,6 +114,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/returns', returnRoutes);
 
 
 app.use(notFound);

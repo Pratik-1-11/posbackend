@@ -66,6 +66,7 @@ export const config = {
       // Whitelist of allowed origins
       const allowedOrigins = [
         process.env.CORS_ORIGIN, // From .env
+        'https://posfrontend-tan.vercel.app', // Vercel Deployment
         process.env.NODE_ENV === 'development' && 'http://localhost:5173',
         process.env.NODE_ENV === 'development' && 'http://localhost:5174',
         process.env.NODE_ENV === 'development' && 'http://127.0.0.1:5173',

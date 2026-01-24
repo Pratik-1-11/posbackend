@@ -275,14 +275,24 @@ export const list = async (req, res, next) => {
 export const getOne = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Check if ID is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUuid = uuidRegex.test(id);
+
     let query = supabase
       .from('sales')
-      .select('*, sale_items(*)')
-      .eq('id', id);
+      .select('*, sale_items(*)');
+
+    if (isUuid) {
+      query = query.eq('id', id);
+    } else {
+      query = query.eq('invoice_number', id);
+    }
 
     query = scopeToTenant(query, req, 'sales');
 
-    const { data: order, error } = await query.single();
+    const { data: order, error } = await query.maybeSingle(); // maybeSingle instead of single to handle not found gracefully
 
 
     if (error || !order) {
