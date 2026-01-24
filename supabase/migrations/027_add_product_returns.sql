@@ -27,11 +27,13 @@ CREATE TABLE IF NOT EXISTS public.return_items (
 ALTER TABLE public.returns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.return_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS returns_isolation ON public.returns;
 CREATE POLICY returns_isolation ON public.returns 
     FOR ALL TO authenticated 
     USING (tenant_id = public.get_user_tenant_id()) 
     WITH CHECK (tenant_id = public.get_user_tenant_id());
 
+DROP POLICY IF EXISTS return_items_isolation ON public.return_items;
 CREATE POLICY return_items_isolation ON public.return_items 
     FOR ALL TO authenticated 
     USING (tenant_id = public.get_user_tenant_id()) 
@@ -39,7 +41,7 @@ CREATE POLICY return_items_isolation ON public.return_items
 
 -- 4. RPC for Processing Return
 CREATE OR REPLACE FUNCTION public.process_pos_return(
-    p_sale_id UUID,
+    p_sale_id TEXT,
     p_items JSONB,
     p_reason TEXT DEFAULT NULL,
     p_cashier_id UUID DEFAULT NULL
@@ -47,23 +49,33 @@ CREATE OR REPLACE FUNCTION public.process_pos_return(
 RETURNS JSONB AS $$
 DECLARE
     v_return_id UUID;
+    v_real_sale_id UUID;
     v_item JSONB;
     v_total_refund NUMERIC := 0;
     v_tenant_id UUID;
     v_sale_customer_id UUID;
     v_sale_invoice TEXT;
     v_prod_tenant UUID;
+    v_is_uuid BOOLEAN;
 BEGIN
     -- 1. Security Context
     v_tenant_id := public.get_user_tenant_id();
     IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'Unauthorized: Tenant not found'; END IF;
 
-    -- 2. Verify Sale
-    SELECT customer_id, invoice_number INTO v_sale_customer_id, v_sale_invoice 
-    FROM public.sales 
-    WHERE id = p_sale_id AND tenant_id = v_tenant_id;
+    -- 2. Resolve Sale ID (could be UUID or Invoice Number)
+    v_is_uuid := p_sale_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
     
-    IF v_sale_invoice IS NULL THEN RAISE EXCEPTION 'Sale not found or unauthorized'; END IF;
+    IF v_is_uuid THEN
+        SELECT id, customer_id, invoice_number INTO v_real_sale_id, v_sale_customer_id, v_sale_invoice 
+        FROM public.sales 
+        WHERE id = p_sale_id::UUID AND tenant_id = v_tenant_id;
+    ELSE
+        SELECT id, customer_id, invoice_number INTO v_real_sale_id, v_sale_customer_id, v_sale_invoice 
+        FROM public.sales 
+        WHERE invoice_number = p_sale_id AND tenant_id = v_tenant_id;
+    END IF;
+    
+    IF v_real_sale_id IS NULL THEN RAISE EXCEPTION 'Sale not found or unauthorized'; END IF;
 
     -- 3. Calculate Total Refund from input items
     FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
@@ -75,7 +87,7 @@ BEGIN
     INSERT INTO public.returns (
         tenant_id, sale_id, cashier_id, total_refund_amount, reason
     ) VALUES (
-        v_tenant_id, p_sale_id, p_cashier_id, v_total_refund, p_reason
+        v_tenant_id, v_real_sale_id, p_cashier_id, v_total_refund, p_reason
     ) RETURNING id INTO v_return_id;
 
     -- 5. Process Return Items
