@@ -12,6 +12,7 @@ export const create = async (req, res, next) => {
       discountAmount = 0,
       customerId,
       customerName,
+      customerPan,
       idempotencyKey
     } = req.body;
 
@@ -190,7 +191,8 @@ export const create = async (req, res, next) => {
       p_payment_details: paymentDetails || {},
       p_customer_name: customerName || 'Walk-in',
       p_idempotency_key: idempotencyKey,
-      p_tenant_id: req.tenant.id // ✅ Required for Service Role calls
+      p_tenant_id: req.tenant.id, // ✅ Required for Service Role calls
+      p_customer_pan: customerPan || null // New Parameter for IRD
     });
 
     if (saleError) {

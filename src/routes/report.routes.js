@@ -9,7 +9,8 @@ import {
     getHealthOverview,
     getPerformanceAnalytics,
     getVatReport,
-    getDashboardSummary
+    getDashboardSummary,
+    getPurchaseBook
 } from '../controllers/report.controller.js';
 
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -24,6 +25,7 @@ router.get('/health', requireAuth, resolveTenant, requireRole('SUPER_ADMIN', 'VE
 router.get('/performance', requireAuth, resolveTenant, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'admin', 'manager'), getPerformanceAnalytics);
 router.get('/cashier', requireAuth, resolveTenant, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'admin', 'manager'), getCashierStats);
 router.get('/vat', requireAuth, resolveTenant, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'admin', 'manager'), getVatReport);
+router.get('/purchase-book', requireAuth, resolveTenant, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'admin', 'manager'), getPurchaseBook);
 router.get('/summary', requireAuth, resolveTenant, getDashboardSummary);
 
 

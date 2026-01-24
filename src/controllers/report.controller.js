@@ -247,23 +247,35 @@ export const getVatReport = async (req, res, next) => {
         const startDate = new Date(year, month - 1, 1).toISOString();
         const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
 
-        const { data: sales, error } = await supabase
-            .from('sales')
-            .select('invoice_number, created_at, customer_name, sub_total, discount_amount, taxable_amount, vat_amount, total_amount')
+        // Query the IRD focused view
+        const { data: records, error } = await supabase
+            .from('ird_sales_book')
+            .select('*')
             .eq('tenant_id', tenantId)
-            .eq('status', 'completed')
-            .gte('created_at', startDate)
-            .lte('created_at', endDate)
-            .order('created_at', { ascending: true });
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[VAT Report] Error fetching from ird_sales_book:', error);
+            // Fallback if view doesn't exist yet
+            const { data: fallback, error: err2 } = await supabase
+                .from('sales')
+                .select('invoice_number, created_at, customer_name, sub_total, discount_amount, taxable_amount, vat_amount, total_amount, payment_method, status')
+                .eq('tenant_id', tenantId)
+                .gte('created_at', startDate)
+                .lte('created_at', endDate);
+
+            if (err2) throw err2;
+            return res.status(StatusCodes.OK).json({ status: 'success', data: { report: fallback, summary: {} } });
+        }
 
         // Calculate totals
-        const summary = sales.reduce((acc, sale) => {
+        const summary = records.reduce((acc, sale) => {
             acc.totalSales += Number(sale.total_amount);
             acc.taxableAmount += Number(sale.taxable_amount);
             acc.vatAmount += Number(sale.vat_amount);
-            acc.nonTaxableAmount += (Number(sale.total_amount) - Number(sale.taxable_amount) - Number(sale.vat_amount));
+            acc.nonTaxableAmount += Number(sale.non_taxable_amount || 0);
             return acc;
         }, {
             totalSales: 0,
@@ -275,7 +287,71 @@ export const getVatReport = async (req, res, next) => {
         res.status(StatusCodes.OK).json({
             status: 'success',
             data: {
-                report: sales,
+                report: records,
+                summary
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const getPurchaseBook = async (req, res, next) => {
+    try {
+        const { year, month } = req.query;
+        const tenantId = req.tenant.id;
+
+        if (!year || !month) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Year and Month are required'
+            });
+        }
+
+        const startDate = new Date(year, month - 1, 1).toISOString();
+        const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
+
+        // 1. Fetch Purchase Records
+        const { data: records, error } = await supabase
+            .from('ird_purchase_book')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true });
+
+        if (error) {
+            console.error('[Purchase Book] Error fetching from ird_purchase_book:', error);
+            // Fallback to raw purchases table if view issues
+            const { data: fallback, error: err2 } = await supabase
+                .from('purchases')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .gte('purchase_date', startDate)
+                .lte('purchase_date', endDate)
+
+            if (err2) throw err2;
+            return res.status(StatusCodes.OK).json({ status: 'success', data: { report: fallback, summary: {} } });
+        }
+
+        // 2. Calculate Summary
+        const summary = records.reduce((acc, item) => {
+            acc.totalImports += Number(item.import_amount || 0); // Placeholder if import exists
+            acc.taxableAmount += Number(item.taxable_amount || 0);
+            acc.vatAmount += Number(item.vat_amount || 0);
+            acc.nonTaxableAmount += Number(item.non_taxable_amount || 0);
+            return acc;
+        }, {
+            totalImports: 0,
+            taxableAmount: 0,
+            vatAmount: 0,
+            nonTaxableAmount: 0
+        });
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: {
+                report: records,
                 summary
             }
         });
