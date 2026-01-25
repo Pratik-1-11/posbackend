@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS public.branch_inventory (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
   branch_id UUID REFERENCES public.branches(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES public.products(id) ON DELETE CASCADE,
   
   quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   min_quantity INTEGER DEFAULT 5,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS public.stock_transfers (
   from_branch_id UUID REFERENCES public.branches(id) ON DELETE CASCADE,
   to_branch_id UUID REFERENCES public.branches(id) ON DELETE CASCADE,
   
-  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES public.products(id) ON DELETE CASCADE,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   
   status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'transit', 'completed', 'cancelled')),
@@ -139,12 +139,11 @@ CREATE POLICY "Tenants can create stock transfers" ON public.stock_transfers
 -- 7.4 Super Admin Override (Assuming SUPER_ADMIN role exists)
 CREATE POLICY "Super admins can see all upgrade requests" ON public.tenant_upgrade_requests
   FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('SUPER_ADMIN', 'super_admin')));
-
 -- 8. Stored Procedure for Branch-Specific Stock Adjustment
 CREATE OR REPLACE FUNCTION public.adjust_branch_stock(
   p_tenant_id UUID,
   p_branch_id UUID,
-  p_product_id UUID,
+  p_product_id INTEGER,
   p_user_id UUID,
   p_quantity INTEGER,
   p_type TEXT, -- 'in', 'out', 'adjustment'

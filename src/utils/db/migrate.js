@@ -73,7 +73,8 @@ const runMigrations = async () => {
       '011_multi_tenant_PART1_schema.sql',
       '012_platform_management.sql',
       '013_stock_movements.sql',
-      '014_subscription_management.sql'
+      '014_subscription_management.sql',
+      '032_multi_store_subscription_logic.sql'
     ];
 
 

@@ -689,7 +689,10 @@ export const getAllUpgradeRequests = async (req, res, next) => {
             .from('tenant_upgrade_requests')
             .select(`
                 *,
-                tenant:tenants(name, subscription_tier)
+                tenants (
+                    name,
+                    subscription_tier
+                )
             `)
             .order('created_at', { ascending: false });
 
