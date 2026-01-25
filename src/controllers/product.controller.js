@@ -5,11 +5,17 @@ import { scopeToTenant, addTenantToPayload, ensureTenantOwnership, logTenantActi
 
 export const list = async (req, res, next) => {
   try {
+    const { branchId } = req.query;
+
     let query = supabase
       .from('products')
-      .select('*, categories(name), suppliers(name)')
+      .select('*, categories(name), suppliers(name), branch_inventory!left(*)')
       .eq('is_active', true)
       .order('name');
+
+    if (branchId) {
+      query = query.eq('branch_inventory.branch_id', branchId);
+    }
 
     query = scopeToTenant(query, req, 'products');
 
@@ -69,10 +75,6 @@ export const create = async (req, res, next) => {
       image,
       description
     } = req.body;
-
-    // ============================================================================
-    // CRITICAL VALIDATION (Security Fix #5)
-    // ============================================================================
 
     // Validate name
     if (!name || name.trim() === '') {
@@ -214,9 +216,6 @@ export const create = async (req, res, next) => {
 
     if (productError) {
       console.error('[ProductController] Insert failed for product:', name);
-      console.error('[ProductController] Payload:', JSON.stringify(dbPayload, null, 2));
-      console.error('[ProductController] Error:', JSON.stringify(productError, null, 2));
-
       if (productError.code === '23505') {
         const duplicateMsg = safeBarcode
           ? `A product with barcode "${safeBarcode}" already exists in your store.`
@@ -333,17 +332,18 @@ export const remove = async (req, res, next) => {
 export const adjustStock = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { quantity, type, reason } = req.body;
+    const { quantity, type, reason, branchId } = req.body;
 
-    if (quantity === undefined || !type) {
+    if (quantity === undefined || !type || !branchId) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: 'error',
-        message: 'Quantity and Type are required'
+        message: 'Quantity, Type, and Branch ID are required'
       });
     }
 
-    const { data, error } = await supabase.rpc('adjust_stock', {
+    const { data, error } = await supabase.rpc('adjust_branch_stock', {
       p_tenant_id: req.tenant.id,
+      p_branch_id: branchId,
       p_product_id: id,
       p_user_id: req.user.id,
       p_quantity: parseInt(quantity),
@@ -353,7 +353,7 @@ export const adjustStock = async (req, res, next) => {
 
     if (error) throw error;
 
-    await logTenantAction(supabase, req, 'STOCK_ADJUSTMENT', 'product', id, { quantity, type, reason });
+    await logTenantAction(supabase, req, 'STOCK_ADJUSTMENT', 'product', id, { quantity, type, reason, branchId });
 
     res.status(StatusCodes.OK).json({
       status: 'success',

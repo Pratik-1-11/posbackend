@@ -681,6 +681,125 @@ export const updateTenantLimits = async (req, res, next) => {
 };
 
 /**
+ * Get all tenant upgrade requests
+ */
+export const getAllUpgradeRequests = async (req, res, next) => {
+    try {
+        const { data: requests, error } = await supabase
+            .from('tenant_upgrade_requests')
+            .select(`
+                *,
+                tenant:tenants(name, subscription_tier)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: requests
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Review/Approve/Reject tenant upgrade request
+ */
+export const reviewUpgradeRequest = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status, rejection_reason } = req.body;
+        const { id: auditorId } = req.user;
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Invalid status. Must be approved or rejected.'
+            });
+        }
+
+        // 1. Get request details
+        const { data: request, error: fetchError } = await supabase
+            .from('tenant_upgrade_requests')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !request) throw fetchError || new Error('Request not found');
+
+        // 2. Update request status
+        const { error: updateReqError } = await supabase
+            .from('tenant_upgrade_requests')
+            .update({
+                status,
+                rejection_reason: status === 'rejected' ? rejection_reason : null,
+                reviewed_by: auditorId,
+                reviewed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (updateReqError) throw updateReqError;
+
+        // 3. If approved, update tenant's subscription tier
+        if (status === 'approved') {
+            const maxStores = request.requested_tier === 'pro' ? 5 : request.requested_tier === 'enterprise' ? 999999 : 1;
+
+            const { error: updateTenantError } = await supabase
+                .from('tenants')
+                .update({
+                    subscription_tier: request.requested_tier,
+                    max_stores: maxStores,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', request.tenant_id);
+
+            if (updateTenantError) throw updateTenantError;
+        }
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            message: `Upgrade request ${status} successfully`
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Verify a tenant manually
+ */
+export const verifyTenant = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { id: auditorId } = req.user;
+
+        const { data: tenant, error } = await supabase
+            .from('tenants')
+            .update({
+                verified: true,
+                verified_at: new Date().toISOString(),
+                verified_by: auditorId,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: tenant
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * Export tenant data
  */
 export const exportTenantData = async (req, res, next) => {

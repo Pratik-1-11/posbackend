@@ -50,4 +50,12 @@ router.get('/tenants/:id/export', adminController.exportTenantData);
 router.get('/settings', adminController.getPlatformSettings);
 router.put('/settings', adminController.updatePlatformSetting);
 
+/**
+ * Upgrade Requests & Verification
+ */
+router.get('/upgrade-requests', adminController.getAllUpgradeRequests);
+router.patch('/upgrade-requests/:id/review', adminController.reviewUpgradeRequest);
+router.patch('/tenants/:id/verify', adminController.verifyTenant);
+
 export default router;
+
