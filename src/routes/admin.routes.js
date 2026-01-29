@@ -1,5 +1,7 @@
 import express from 'express';
 import * as adminController from '../controllers/admin.controller.js';
+import * as billingController from '../controllers/billing.controller.js';
+import * as supportController from '../controllers/support.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
 
@@ -56,6 +58,26 @@ router.put('/settings', adminController.updatePlatformSetting);
 router.get('/upgrade-requests', adminController.getAllUpgradeRequests);
 router.patch('/upgrade-requests/:id/review', adminController.reviewUpgradeRequest);
 router.patch('/tenants/:id/verify', adminController.verifyTenant);
+
+/**
+ * Plan Management
+ */
+router.get('/plans', adminController.getPlans);
+router.get('/plans/:id', adminController.getPlanDetails);
+
+/**
+ * Billing & Monetization
+ */
+router.get('/billing/invoices', billingController.getAllInvoices);
+router.post('/billing/payments', billingController.recordPayment);
+router.post('/billing/maintenance', billingController.runMaintenanceCheck);
+
+/**
+ * Support & Announcements
+ */
+router.post('/announcements', supportController.createAnnouncement);
+router.get('/announcements', supportController.getAnnouncements);
+router.get('/tenants/:id/health', supportController.getTenantHealth);
 
 export default router;
 

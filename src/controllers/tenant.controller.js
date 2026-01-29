@@ -10,7 +10,21 @@ export const getSubscriptionInfo = async (req, res, next) => {
 
         const { data: tenant, error } = await supabase
             .from('tenants')
-            .select('id, name, subscription_tier, subscription_status, max_stores, current_stores_count, verified')
+            .select(`
+                id, 
+                name, 
+                subscription_tier, 
+                subscription_status, 
+                max_stores, 
+                current_stores_count, 
+                verified,
+                plans (
+                    name,
+                    max_users,
+                    max_products,
+                    features
+                )
+            `)
             .eq('id', tenant_id)
             .single();
 
