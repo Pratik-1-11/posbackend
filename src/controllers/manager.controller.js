@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 import supabase from '../config/supabase.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 10;
 
