@@ -22,7 +22,7 @@ export const login = async (req, res, next) => {
     // Fetch profile and tenant to return role info
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*, tenants(*)')
+      .select('*, tenants!tenant_id(*)')
       .eq('id', user.id)
       .single();
 
