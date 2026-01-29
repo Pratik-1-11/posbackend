@@ -20,11 +20,20 @@ export const login = async (req, res, next) => {
     const { session, user } = data;
 
     // Fetch profile and tenant to return role info
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*, tenants(*)')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      console.error(`[Auth] Profile lookup failed for user ${user.id}:`, profileError.message);
+      // We still allow login but with minimal role if profile is missing 
+      // (though frontend might reject it)
+    }
+
+    const userRole = profile?.role || 'user';
+    console.log(`[Auth] User logged in: ${user.email} | Role: ${userRole} | ID: ${user.id}`);
 
     return res.status(StatusCodes.OK).json({
       status: 'success',
@@ -34,7 +43,7 @@ export const login = async (req, res, next) => {
         user: {
           id: user.id,
           email: user.email,
-          role: profile?.role || 'user',
+          role: userRole,
           full_name: profile?.full_name,
           tenant: profile?.tenants ? {
             id: profile.tenants.id,
