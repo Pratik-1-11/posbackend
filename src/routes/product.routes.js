@@ -17,9 +17,9 @@ router.get('/categories', listCategories);
 router.get('/', list);
 router.get('/:id', getOne);
 
-router.post('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER', 'cashier'), upload.single('image'), validate(createProductSchema), create);
-router.put('/:id', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER', 'cashier'), upload.single('image'), validate(updateProductSchema), update);
-router.post('/:id/adjust', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER', 'cashier'), adjustStock);
+router.post('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), upload.single('image'), validate(createProductSchema), create);
+router.put('/:id', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), upload.single('image'), validate(updateProductSchema), update);
+router.post('/:id/adjust', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), adjustStock);
 router.delete('/:id', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER'), remove);
 
 

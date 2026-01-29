@@ -132,6 +132,26 @@ export const create = async (req, res, next) => {
     let subTotal = 0;
     const saleItems = [];
 
+    // Verify managers for overrides if any
+    const overrideManagerIds = [...new Set(items.filter(i => i.authorizedBy).map(i => i.authorizedBy))];
+    let authorizedManagers = [];
+    if (overrideManagerIds.length > 0) {
+      const { data: managers } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .in('id', overrideManagerIds)
+        .eq('tenant_id', tenantId);
+
+      authorizedManagers = (managers || []).filter(m => ['VENDOR_ADMIN', 'VENDOR_MANAGER'].includes(m.role));
+
+      if (authorizedManagers.length !== overrideManagerIds.length) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          status: 'error',
+          message: 'One or more price overrides were not properly authorized by a manager.'
+        });
+      }
+    }
+
     for (const item of items) {
       const product = products.find(p => p.id === item.productId);
 
@@ -139,15 +159,27 @@ export const create = async (req, res, next) => {
         throw new Error(`Insufficient stock for ${product.name}`);
       }
 
-      const lineTotal = Number(product.selling_price) * item.quantity;
+      let unitPrice = Number(product.selling_price);
+      let isOverridden = false;
+
+      // Price Override Logic
+      if (item.authorizedBy && item.price !== undefined) {
+        unitPrice = Number(item.price);
+        isOverridden = true;
+      }
+
+      const lineTotal = unitPrice * item.quantity;
       subTotal += lineTotal;
 
       saleItems.push({
         productId: product.id,
         name: product.name,
         quantity: item.quantity,
-        price: product.selling_price,
-        total: lineTotal
+        price: unitPrice,
+        total: lineTotal,
+        originalPrice: isOverridden ? Number(product.selling_price) : null,
+        overrideReason: item.overrideReason || null,
+        authorizedBy: item.authorizedBy || null
       });
     }
 

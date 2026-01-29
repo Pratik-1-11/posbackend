@@ -22,6 +22,10 @@ import adminRoutes from './routes/admin.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import returnRoutes from './routes/return.routes.js';
 import tenantRoutes from './routes/tenant.routes.js';
+import shiftRoutes from './routes/shift.routes.js';
+import managerRoutes from './routes/manager.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
+import batchRoutes from './routes/batch.routes.js';
 
 
 
@@ -117,6 +121,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/tenants', tenantRoutes);
+app.use('/api/shifts', financialLimiter, shiftRoutes);
+app.use('/api/manager', financialLimiter, managerRoutes);
+app.use('/api/invoices', financialLimiter, invoiceRoutes);
+app.use('/api/batches', batchRoutes);
 
 
 app.use(notFound);

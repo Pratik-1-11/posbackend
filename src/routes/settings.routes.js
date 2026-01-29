@@ -10,7 +10,7 @@ router.use(requireAuth);
 router.use(resolveTenant);
 
 router.get('/', getSettings);
-router.put('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'admin'), updateSettings);
+router.put('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN'), updateSettings);
 
 
 export default router;

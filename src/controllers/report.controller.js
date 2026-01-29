@@ -413,7 +413,12 @@ export const getDashboardSummary = async (req, res, next) => {
                 supabase.from('sales').select('cashier_id').eq('tenant_id', tenantId).gte('created_at', todayStr),
                 supabase.from('products').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_active', true).lt('stock_quantity', 10),
                 supabase.from('customers').select('total_credit').eq('tenant_id', tenantId).gt('total_credit', 0),
-                supabase.from('sales').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['cancelled', 'failed']).gte('created_at', todayStr)
+                supabase.from('sales').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['cancelled', 'failed']).gte('created_at', todayStr),
+                supabase.from('product_batches').select('*', { count: 'exact', head: true })
+                    .eq('tenant_id', tenantId)
+                    .eq('status', 'active')
+                    .gt('quantity_remaining', 0)
+                    .lte('expiry_date', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
             ]),
 
             // 3. Performance
@@ -444,6 +449,7 @@ export const getDashboardSummary = async (req, res, next) => {
                 health: {
                     activeCashiers: uniqueCashiers,
                     lowStockAlerts: healthResult[1].count || 0,
+                    expiringSoon: healthResult[4]?.count || 0,
                     pendingCredits: totalPendingCredits,
                     failedTransactions: healthResult[3].count || 0
                 },
@@ -451,6 +457,49 @@ export const getDashboardSummary = async (req, res, next) => {
                     topProducts: performanceResult[0].data || [],
                     paymentSplit: split
                 }
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const getProfitAnalysis = async (req, res, next) => {
+    try {
+        const { startDate, endDate, branchId } = req.query;
+        const tenantId = req.tenant.id;
+
+        let query = supabase.from('vw_profit_analysis').select('*').eq('tenant_id', tenantId);
+
+        if (startDate) query = query.gte('sale_date', startDate);
+        if (endDate) query = query.lte('sale_date', endDate);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data: records, error } = await query.order('sale_date', { ascending: false });
+
+        if (error) throw error;
+
+        // Calculate aggregate metrics
+        const summary = records.reduce((acc, item) => {
+            acc.totalRevenue += Number(item.selling_price) * item.quantity;
+            acc.totalCost += Number(item.cost_price) * item.quantity;
+            acc.totalProfit += Number(item.line_profit);
+            return acc;
+        }, {
+            totalRevenue: 0,
+            totalCost: 0,
+            totalProfit: 0
+        });
+
+        summary.averageMargin = summary.totalRevenue > 0
+            ? (summary.totalProfit / summary.totalRevenue) * 100
+            : 0;
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: {
+                report: records,
+                summary
             }
         });
     } catch (err) {

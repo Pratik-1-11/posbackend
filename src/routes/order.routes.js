@@ -7,7 +7,7 @@ import { requireRole } from '../middleware/role.middleware.js';
 const router = Router();
 
 router.post('/', requireTenantAuth, create);
-router.get('/', requireTenantAuth, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'CASHIER', 'admin', 'manager', 'cashier'), list);
-router.get('/:id', requireTenantAuth, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'CASHIER', 'admin', 'manager', 'cashier'), getOne);
+router.get('/', requireTenantAuth, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'CASHIER'), list);
+router.get('/:id', requireTenantAuth, requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'CASHIER'), getOne);
 
 export default router;

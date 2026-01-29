@@ -19,7 +19,7 @@ router.get('/upgrade-requests', tenantController.getMyUpgradeRequests);
  * Store (Branch) Management
  */
 router.get('/branches', tenantController.getBranches);
-router.post('/branches', requireRole(['VENDOR_ADMIN', 'ADMIN']), tenantController.createBranch);
-router.put('/branches/:id', requireRole(['VENDOR_ADMIN', 'ADMIN']), tenantController.updateBranch);
+router.post('/branches', requireRole('VENDOR_ADMIN'), tenantController.createBranch);
+router.put('/branches/:id', requireRole('VENDOR_ADMIN'), tenantController.updateBranch);
 
 export default router;

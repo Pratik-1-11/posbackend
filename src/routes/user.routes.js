@@ -10,7 +10,7 @@ const router = Router();
 // All user routes require Auth, Tenant Context, and ADMIN role
 router.use(requireAuth);
 router.use(resolveTenant);
-router.use(requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'admin', 'manager'));
+router.use(requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'));
 
 
 router.get('/', getUsers);
