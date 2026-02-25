@@ -8,7 +8,7 @@ This folder contains a **separate backend service** for your POS app.
 - Role-based access control: `ADMIN`, `CASHIER`
 - Products CRUD
 - Orders create + get (transaction for order + order_items)
-- PostgreSQL via `pg` (works with Supabase/Railway/Render)
+- PostgreSQL via `pg` (works with Supabase/Render)
 
 ## Folder structure
 

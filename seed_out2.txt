@@ -1,0 +1,62 @@
+node : node:internal/modules/esm/
+resolve:1182
+At line:1 char:1
++ node --input-type=module 
+--experimental-vm-modules 
+scripts/seed_super ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo          : No 
+   tSpecified: (node:internal/m  
+  odules/esm/resolve:1182:Stri   
+ ng) [], RemoteException
+    + FullyQualifiedErrorId : Na 
+   tiveCommandError
+ 
+    if (inputTypeFlag) { throw 
+new 
+ERR_INPUT_TYPE_NOT_ALLOWED(); }
+                               ^
+
+Error 
+[ERR_INPUT_TYPE_NOT_ALLOWED]: 
+--input-type can only be used 
+with string input via --eval, 
+--print, or STDIN
+    at defaultResolve (node:inter
+nal/modules/esm/resolve:1182:32)
+    at 
+ModuleLoader.defaultResolve (node
+:internal/modules/esm/loader:642:
+12)
+    at #cachedDefaultResolve (nod
+e:internal/modules/esm/loader:591
+:25)
+    at ModuleLoader.resolve (node
+:internal/modules/esm/loader:574:
+38)
+    at ModuleLoader.getModuleJobF
+orImport (node:internal/modules/e
+sm/loader:236:38)
+    at ModuleLoader.import (node:
+internal/modules/esm/loader:539:3
+4)
+    at node:internal/modules/run_
+main:174:35
+    at 
+asyncRunEntryPointWithESMLoader (
+node:internal/modules/run_main:11
+7:11)
+    at 
+runEntryPointWithESMLoader (node:
+internal/modules/run_main:141:19)
+    at 
+Function.executeUserEntryPoint 
+[as runMain] (node:internal/modul
+es/run_main:171:5) {
+  code: 
+'ERR_INPUT_TYPE_NOT_ALLOWED'
+}
+
+Node.js v20.19.4

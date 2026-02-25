@@ -53,7 +53,7 @@ logger.add(new winston.transports.Console({
 }));
 
 // Add file transports only if we are not in production or if needed
-// Note: In many container environments like Railway/Vercel, file logging is discouraged
+// Note: In many container environments like Vercel/Render, file logging is discouraged
 if (config.nodeEnv !== 'production') {
   // We already have file transports defined in the constructor
 }

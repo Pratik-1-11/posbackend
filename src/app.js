@@ -31,7 +31,7 @@ import batchRoutes from './routes/batch.routes.js';
 
 const app = express();
 
-// Trust proxy (required for Railway/Vercel/Heroku)
+// Trust proxy (required for Vercel/Heroku/Render)
 app.set('trust proxy', 1);
 
 // Global request logger for production debugging
