@@ -506,3 +506,55 @@ export const getProfitAnalysis = async (req, res, next) => {
         next(err);
     }
 };
+
+export const getForecasting = async (req, res, next) => {
+    try {
+        const tenantId = req.tenant.id;
+
+        // 1. Sales Prediction (Next 6 Months)
+        const { data: salesForecast, error: err1 } = await supabase
+            .rpc('predict_monthly_sales', { p_tenant_id: tenantId, p_months_forward: 6 });
+
+        if (err1) throw err1;
+
+        // 2. Stock Depletion & Predictive Insights
+        const { data: insights, error: err2 } = await supabase
+            .from('vw_predictive_insights')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .limit(20);
+
+        if (err2) throw err2;
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: {
+                salesForecast,
+                insights
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const getCustomerAging = async (req, res, next) => {
+    try {
+        const tenantId = req.tenant.id;
+
+        const { data, error } = await supabase
+            .from('vw_customer_aging')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .order('total_due', { ascending: false });
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: { aging: data }
+        });
+    } catch (err) {
+        next(err);
+    }
+};

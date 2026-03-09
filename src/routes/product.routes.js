@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { list, getOne, create, update, remove, adjustStock, listCategories } from '../controllers/product.controller.js';
 
-import { requireAuth } from '../middleware/auth.middleware.js';
-import { resolveTenant } from '../middleware/tenantResolver.js';
+import { requireTenantAuth } from '../middleware/unifiedAuth.js';
 import { requireRole } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createProductSchema, updateProductSchema } from '../utils/validators/product.schemas.js';
@@ -10,8 +9,7 @@ import { upload } from '../utils/upload.service.js';
 
 const router = Router();
 
-router.use(requireAuth);
-router.use(resolveTenant);
+router.use(requireTenantAuth);
 
 router.get('/categories', listCategories);
 router.get('/', list);

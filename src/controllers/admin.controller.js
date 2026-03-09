@@ -894,3 +894,65 @@ export const getPlanDetails = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * Get all integrations for a specific tenant
+ */
+export const getTenantIntegrations = async (req, res, next) => {
+    try {
+        const { id: tenantId } = req.params;
+
+        const { data, error } = await supabase
+            .from('vw_integration_status')
+            .select('*')
+            .eq('tenant_id', tenantId);
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({ status: 'success', data });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get all webhooks for a specific tenant
+ */
+export const getTenantWebhooks = async (req, res, next) => {
+    try {
+        const { id: tenantId } = req.params;
+
+        const { data, error } = await supabase
+            .from('vw_webhook_performance')
+            .select('*')
+            .eq('tenant_id', tenantId);
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({ status: 'success', data });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get sync jobs history for a specific tenant
+ */
+export const getTenantSyncJobs = async (req, res, next) => {
+    try {
+        const { id: tenantId } = req.params;
+
+        const { data, error } = await supabase
+            .from('vw_sync_job_performance')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        res.status(StatusCodes.OK).json({ status: 'success', data });
+    } catch (err) {
+        next(err);
+    }
+};

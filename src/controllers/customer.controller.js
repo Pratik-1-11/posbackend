@@ -65,7 +65,7 @@ export const getOne = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
     try {
-        const { name, phone, email, address, creditLimit = 0 } = req.body;
+        const { name, phone, email, address, pan_number, creditLimit = 0 } = req.body;
 
         // Validate required fields
         if (!name || !name.trim()) {
@@ -88,6 +88,7 @@ export const create = async (req, res, next) => {
             phone,
             email,
             address,
+            pan_number,
             credit_limit: creditLimit
         }, req);
 
@@ -122,13 +123,14 @@ export const update = async (req, res, next) => {
         const { id } = req.params;
         await ensureTenantOwnership(supabase, req, 'customers', id);
 
-        const { name, phone, email, address, isActive, creditLimit } = req.body;
+        const { name, phone, email, address, pan_number, isActive, creditLimit } = req.body;
 
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (phone !== undefined) updates.phone = phone;
         if (email !== undefined) updates.email = email;
         if (address !== undefined) updates.address = address;
+        if (pan_number !== undefined) updates.pan_number = pan_number;
         if (isActive !== undefined) updates.is_active = isActive;
         if (creditLimit !== undefined) updates.credit_limit = creditLimit;
         updates.updated_at = new Date();
@@ -212,39 +214,29 @@ export const getAgingReport = async (req, res, next) => {
     try {
         const tenantId = req.tenant.id;
 
-        // Fetch all customers with positive credit matching tenant
-        const { data: customers, error } = await supabase
-            .from('customers')
-            .select('id, name, total_credit')
+        const { data, error } = await supabase
+            .from('vw_customer_aging')
+            .select('*')
             .eq('tenant_id', tenantId)
-            .gt('total_credit', 0);
+            .order('total_due', { ascending: false });
 
         if (error) throw error;
 
-        // For each customer, find the oldest unpaid sale/transaction
-        // This is a simplified aging: we look at when the current balance likely started accumulating
-        const agingReport = await Promise.all(customers.map(async (c) => {
-            const { data: oldestTx } = await supabase
-                .from('customer_transactions')
-                .select('created_at')
-                .eq('customer_id', c.id)
-                .eq('type', 'sale')
-                .order('created_at', { ascending: true })
-                .limit(1)
-                .single();
-
-            const daysOld = oldestTx ? Math.floor((new Date() - new Date(oldestTx.created_at)) / (86400000)) : 0;
-
-            return {
-                id: c.id,
-                name: c.name,
-                balance: c.total_credit,
-                daysOld,
-                tier: daysOld > 30 ? '30+' : daysOld > 15 ? '15-30' : daysOld > 7 ? '7-15' : '0-7'
-            };
+        // Map view fields to expected report format if needed
+        const report = data.map(c => ({
+            id: c.customer_id,
+            name: c.customer_name,
+            balance: c.total_due,
+            daysOld: c.oldest_debt_days || 0,
+            buckets: {
+                current: c.current_0_30,
+                overdue30: c.overdue_31_60,
+                overdue60: c.overdue_61_90,
+                overdue90: c.overdue_91_plus
+            }
         }));
 
-        res.status(StatusCodes.OK).json({ status: 'success', data: { report: agingReport } });
+        res.status(StatusCodes.OK).json({ status: 'success', data: { report } });
     } catch (err) {
         next(err);
     }

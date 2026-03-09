@@ -26,7 +26,10 @@ import shiftRoutes from './routes/shift.routes.js';
 import managerRoutes from './routes/manager.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 import batchRoutes from './routes/batch.routes.js';
-import accountingRoutes from './routes/accounting.routes.js'; const app = express();
+import accountingRoutes from './routes/accounting.routes.js';
+import integrationRoutes from './routes/integration.routes.js';
+
+const app = express();
 
 // Trust proxy (required for Vercel/Heroku/Render)
 app.set('trust proxy', 1);
@@ -123,6 +126,7 @@ app.use('/api/manager', financialLimiter, managerRoutes);
 app.use('/api/invoices', financialLimiter, invoiceRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/integrations', integrationRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

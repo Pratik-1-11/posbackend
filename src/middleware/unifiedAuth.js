@@ -62,6 +62,21 @@ export const requireTenantAuth = async (req, res, next) => {
             });
         }
 
+        // Subscription Status Checks
+        if (tenant.subscription_status === 'cancelled') {
+            return res.status(StatusCodes.FORBIDDEN).json({
+                status: 'error',
+                message: 'Your subscription has been cancelled. Please renew to continue.',
+            });
+        }
+
+        if (tenant.subscription_status === 'suspended') {
+            return res.status(StatusCodes.FORBIDDEN).json({
+                status: 'error',
+                message: 'Your subscription is suspended. Please contact billing.',
+            });
+        }
+
         // User Status Check
         if (profile.is_active === false) {
             return res.status(StatusCodes.FORBIDDEN).json({

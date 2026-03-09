@@ -47,6 +47,13 @@ router.put('/tenants/:id/limits', adminController.updateTenantLimits);
 router.get('/tenants/:id/export', adminController.exportTenantData);
 
 /**
+ * Integration Monitoring
+ */
+router.get('/tenants/:id/integrations', adminController.getTenantIntegrations);
+router.get('/tenants/:id/webhooks', adminController.getTenantWebhooks);
+router.get('/tenants/:id/sync', adminController.getTenantSyncJobs);
+
+/**
  * Platform Console
  */
 router.get('/settings', adminController.getPlatformSettings);

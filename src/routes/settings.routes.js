@@ -1,13 +1,11 @@
 import { Router } from 'express';
 import { getSettings, updateSettings } from '../controllers/settings.controller.js';
-import { requireAuth } from '../middleware/auth.middleware.js';
-import { resolveTenant } from '../middleware/tenantResolver.js';
+import { requireTenantAuth } from '../middleware/unifiedAuth.js';
 import { requireRole } from '../middleware/role.middleware.js';
 
 const router = Router();
 
-router.use(requireAuth);
-router.use(resolveTenant);
+router.use(requireTenantAuth);
 
 router.get('/', getSettings);
 router.put('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN'), updateSettings);

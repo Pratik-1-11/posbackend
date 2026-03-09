@@ -1,12 +1,10 @@
 import { Router } from 'express';
 import { list, getOne, create, update, getTransactions, addTransaction, getHistory, getAgingReport } from '../controllers/customer.controller.js';
-import { requireAuth } from '../middleware/auth.middleware.js';
-import { resolveTenant } from '../middleware/tenantResolver.js';
+import { requireTenantAuth } from '../middleware/unifiedAuth.js';
 
 const router = Router();
 
-router.use(requireAuth);
-router.use(resolveTenant);
+router.use(requireTenantAuth);
 
 router.get('/aging', getAgingReport);
 

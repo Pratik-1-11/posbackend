@@ -1,12 +1,12 @@
 import express from 'express';
 import * as tenantController from '../controllers/tenant.controller.js';
-import { requireAuth } from '../middleware/auth.middleware.js';
+import { requireTenantAuth } from '../middleware/unifiedAuth.js';
 import { requireRole } from '../middleware/role.middleware.js';
 
 const router = express.Router();
 
-// All tenant routes require authentication
-router.use(requireAuth);
+// All tenant routes require authentication + tenant context
+router.use(requireTenantAuth);
 
 /**
  * Subscription & Upgrade Requests
