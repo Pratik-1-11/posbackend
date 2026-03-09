@@ -13,7 +13,8 @@ export const create = async (req, res, next) => {
       customerId,
       customerName,
       customerPan,
-      idempotencyKey
+      idempotencyKey,
+      vatMode = 'exclusive'
     } = req.body;
 
     const tenantId = req.tenant.id;
@@ -201,8 +202,17 @@ export const create = async (req, res, next) => {
       });
     }
 
-    const vatAmount = totalAmount - (totalAmount / 1.13);
-    const taxableAmount = totalAmount - vatAmount;
+    let vatAmount = 0;
+    let taxableAmount = totalAmount;
+
+    // Calculate VAT correctly based on Mode
+    if (vatMode === 'exclusive') {
+      vatAmount = subTotal * 0.13;
+      taxableAmount = subTotal;
+    } else {
+      vatAmount = totalAmount - (totalAmount / 1.13);
+      taxableAmount = totalAmount - vatAmount;
+    }
 
     // ============================================================================
     // SECURE ATOMIC RPC (Fix #9: Remove vulnerable p_tenant_id parameter)
@@ -210,13 +220,13 @@ export const create = async (req, res, next) => {
     // ============================================================================
     // 4. Call RPC (Atomic Transaction)
     // We pass p_tenant_id because we are calling as Service Role
-    const { data: saleResult, error: saleError } = await supabase.rpc('process_pos_sale', {
+    const rpcParams = {
       p_items: saleItems,
       p_customer_id: customerId || null,
       p_cashier_id: req.user.id,
       p_branch_id: req.user.branch_id || null, // Assuming branch_id is on user
       p_discount_amount: discountAmount,
-      p_taxable_amount: taxableAmount, // Simplified for now
+      p_taxable_amount: taxableAmount, // Support for pure IRD reporting
       p_vat_amount: vatAmount,
       p_total_amount: totalAmount,
       p_payment_method: paymentMethod || 'cash',
@@ -225,7 +235,10 @@ export const create = async (req, res, next) => {
       p_idempotency_key: idempotencyKey,
       p_tenant_id: req.tenant.id, // ✅ Required for Service Role calls
       p_customer_pan: customerPan || null // New Parameter for IRD
-    });
+    };
+    console.log('[OrderController] RPC Params:', rpcParams);
+
+    const { data: saleResult, error: saleError } = await supabase.rpc('process_pos_sale', rpcParams);
 
     if (saleError) {
       console.error('Sale Processing Error:', saleError);

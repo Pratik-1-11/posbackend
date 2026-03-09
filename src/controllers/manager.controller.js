@@ -66,10 +66,10 @@ export const updateManagerPin = async (req, res, next) => {
         const { userId, newPin } = req.body;
         const tenantId = req.tenant.id;
 
-        // Security: Only Vendor Admin can change other people's PINs
+        // Security: Only Vendor Admin or Super Admin can change other people's PINs
         // Or users can change their own if they have manager/admin role
         const isSelf = req.user.id === userId;
-        const isAdmin = req.user.role === 'VENDOR_ADMIN';
+        const isAdmin = ['SUPER_ADMIN', 'VENDOR_ADMIN'].includes(req.user.role);
 
         if (!isSelf && !isAdmin) {
             return res.status(StatusCodes.FORBIDDEN).json({

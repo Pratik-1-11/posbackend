@@ -6,7 +6,7 @@ export const getUsers = async (req, res, next) => {
   try {
     let query = supabase
       .from('profiles')
-      .select('*, branches(name)')
+      .select('id, full_name, username, email, role, branch_id, branches:branch_id(id, name)')
       .order('created_at', { ascending: false });
 
     query = scopeToTenant(query, req, 'profiles');
@@ -15,15 +15,23 @@ export const getUsers = async (req, res, next) => {
 
     if (error) throw error;
 
+    // Normalize: ensure every user has a valid role so the frontend doesn't crash
+    const normalized = (users || []).map(u => ({
+      ...u,
+      role: u.role || 'CASHIER',
+      full_name: u.full_name || u.username || u.email || 'Unnamed',
+    }));
+
     res.status(StatusCodes.OK).json({
       status: 'success',
-      results: users.length,
-      data: { users },
+      results: normalized.length,
+      data: { users: normalized },
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const createUser = async (req, res, next) => {
   try {

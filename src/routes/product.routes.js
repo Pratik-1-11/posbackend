@@ -20,6 +20,7 @@ router.get('/:id', getOne);
 router.post('/', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), upload.single('image'), validate(createProductSchema), create);
 router.put('/:id', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), upload.single('image'), validate(updateProductSchema), update);
 router.post('/:id/adjust', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), adjustStock);
+router.post('/:id/adjust-stock', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER', 'CASHIER'), adjustStock); // alias used by frontend
 router.delete('/:id', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'INVENTORY_MANAGER'), remove);
 
 

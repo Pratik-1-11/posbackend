@@ -12,6 +12,7 @@ export const createProductSchema = Joi.object({
   category: Joi.string().allow('').max(50).default('Uncategorized'),
   isActive: Joi.boolean().default(true),
   image: Joi.any().optional(),
+  branchId: Joi.string().uuid().optional(), // used to seed branch_inventory on creation
 });
 
 export const updateProductSchema = Joi.object({

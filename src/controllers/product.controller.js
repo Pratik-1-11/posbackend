@@ -231,6 +231,17 @@ export const create = async (req, res, next) => {
       throw productError;
     }
 
+    // Seed branch_inventory for the current branch so stock shows up when filtered by branchId
+    const branchId = req.headers['x-branch-id'] || req.query.branchId || req.body.branchId;
+    if (branchId && req.tenant?.id && stock > 0) {
+      await supabase.from('branch_inventory').upsert({
+        tenant_id: req.tenant.id,
+        branch_id: branchId,
+        product_id: created.id,
+        quantity: stock,
+      }, { onConflict: 'branch_id,product_id' });
+    }
+
     await logTenantAction(supabase, req, 'CREATE', 'product', created.id, { name: created.name });
 
     res.status(StatusCodes.CREATED).json({ status: 'success', data: { product: created } });
