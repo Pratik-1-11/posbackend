@@ -14,8 +14,8 @@ export const requireRole = (...roles) => {
     const userRoleRaw = req.user.role;
     const userRole = (userRoleRaw || '').toString().trim().toUpperCase();
 
-    // Normalize allowed roles to UPPERCASE
-    const allowedRoles = roles.map(r => r.toString().trim().toUpperCase());
+    // Normalize allowed roles to UPPERCASE and handle both arrays or spread arguments
+    const allowedRoles = roles.flat().map(r => r.toString().trim().toUpperCase());
 
     // 3. Check for match
     // Support if user has multiple roles (future proofing) or single role
