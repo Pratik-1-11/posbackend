@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 import { StatusCodes } from 'http-status-codes';
 import logger from '../utils/logger.js';
 
