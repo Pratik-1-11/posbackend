@@ -11,7 +11,7 @@ export const list = async (req, res, next) => {
 
         let query = supabase
             .from('customers')
-            .select('*, loyalty_memberships(points_balance, current_tier)', { count: 'exact' })
+            .select('*', { count: 'exact' })
             .order('name');
 
         query = scopeToTenant(query, req, 'customers');
@@ -40,7 +40,7 @@ export const getOne = async (req, res, next) => {
         const { id } = req.params;
         let query = supabase
             .from('customers')
-            .select('*, loyalty_memberships(points_balance, current_tier)')
+            .select('*')
             .eq('id', id);
 
         query = scopeToTenant(query, req, 'customers');
