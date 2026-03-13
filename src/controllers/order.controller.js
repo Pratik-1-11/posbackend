@@ -236,7 +236,8 @@ export const create = async (req, res, next) => {
       p_customer_name: customerName || 'Walk-in',
       p_idempotency_key: idempotencyKey,
       p_tenant_id: req.tenant.id, // ✅ Required for Service Role calls
-      p_customer_pan: customerPan || null // New Parameter for IRD
+      p_customer_pan: customerPan || null, // New Parameter for IRD
+      p_payment_splits: paymentDetails?.splits || null // New: Supporting split payments
     };
     console.log('[OrderController] RPC Params:', rpcParams);
 
@@ -247,30 +248,25 @@ export const create = async (req, res, next) => {
       throw saleError;
     }
 
-    // Supabase RPC result handling
+    // Supabase RPC result handling (Standardizing the response)
     const resultRaw = Array.isArray(saleResult) ? saleResult[0] : saleResult;
 
-    // Check if result is wrapped in 'sale' key (from new RPC) or flat (legacy)
-    const saleData = resultRaw?.sale || resultRaw;
-
-    if (!saleData || !saleData.id) {
-      console.error('Unexpected RPC response structure:', saleResult);
-      throw new Error('Failed to retrieve sale result from database');
-    }
-
     const responseOrder = {
-      id: saleData.id,
-      invoice_number: saleData.invoice_number,
+      id: resultRaw.id,
+      invoice_number: resultRaw.invoice_number,
       total_amount: totalAmount,
       payment_method: paymentMethod,
+      loyalty_points_earned: resultRaw.loyalty_points_earned || 0,
+      cogs: resultRaw.cogs || 0,
       created_at: new Date().toISOString()
     };
 
     // Audit Log
-    await logTenantAction(supabase, req, 'CREATE_SALE', 'sales', saleData.id, {
-      invoice_number: saleData.invoice_number,
+    await logTenantAction(supabase, req, 'CREATE_SALE', 'sales', resultRaw.id, {
+      invoice_number: resultRaw.invoice_number,
       total_amount: totalAmount,
-      items_count: saleItems.length
+      items_count: saleItems.length,
+      loyalty_points: resultRaw.loyalty_points_earned
     });
 
     res.status(StatusCodes.CREATED).json({
@@ -278,7 +274,8 @@ export const create = async (req, res, next) => {
       data: {
         order: responseOrder,
         sale: responseOrder, // Duplicate for backward/forward compatibility
-        items: saleItems
+        items: saleItems,
+        loyalty_points_earned: resultRaw.loyalty_points_earned || 0
       },
     });
 
