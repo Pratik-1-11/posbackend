@@ -374,7 +374,8 @@ export const getReturns = async (req, res, next) => {
             .eq('tenant_id', tenantId);
 
         // Apply branch filter for non-admin users
-        if (req.user.role !== 'super_admin') {
+        // If branchId is null, it means the user is a tenant admin and can see all branches.
+        if (req.user.role !== 'super_admin' && branchId && branchId !== 'null' && branchId !== 'undefined') {
             query = query.eq('branch_id', branchId);
         }
 
@@ -426,6 +427,13 @@ export const getReturnById = async (req, res, next) => {
     try {
         const { id } = req.params;
         const tenantId = req.tenant.id;
+
+        if (!id || id === 'null' || id === 'undefined') {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'A valid Return ID is required'
+            });
+        }
 
         // Get return details
         const { data: returnRecord, error: returnError } = await supabase
