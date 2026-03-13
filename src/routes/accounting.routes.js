@@ -7,7 +7,7 @@ const router = Router();
 
 // Financial routes are restricted to Admins and Managers
 router.use(requireTenantAuth);
-router.use(requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'));
+router.use(requireRole('SUPER_ADMIN', 'BRANCH_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'MANAGER'));
 
 router.get('/journals', accountingController.getJournalEntries);
 router.get('/accounts', accountingController.getChartOfAccounts);
