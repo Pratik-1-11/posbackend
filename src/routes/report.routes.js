@@ -25,7 +25,7 @@ const router = Router();
 router.use(requireTenantAuth);
 
 // Reports are generally for managers and admins
-router.get('/daily', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'), getDailySales);
+router.get('/daily', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER', 'CASHIER'), getDailySales);
 router.get('/health', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'), getHealthOverview);
 router.get('/performance', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'), getPerformanceAnalytics);
 router.get('/cashier', requireRole('SUPER_ADMIN', 'VENDOR_ADMIN', 'VENDOR_MANAGER'), getCashierStats);
