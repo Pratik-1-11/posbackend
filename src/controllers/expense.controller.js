@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import supabase from '../config/supabase.js';
 import { scopeToTenant, addTenantToPayload, ensureTenantOwnership, logTenantAction } from '../utils/tenantQuery.js';
+import { createJournalEntry } from '../utils/accounting.js';
 
 export const list = async (req, res, next) => {
     try {
@@ -59,6 +60,22 @@ export const create = async (req, res, next) => {
 
         // Audit Log
         await logTenantAction(supabase, req, 'CREATE_EXPENSE', 'expenses', expense.id, { amount, category });
+
+        // Phase 1: Accounting Integration - Auto-Journal for Expense
+        // Entry: Debit Expense, Credit Cash/Bank
+        await createJournalEntry({
+            tenantId: req.tenant.id,
+            branchId: req.user.branch_id,
+            referenceId: expense.id,
+            referenceType: 'EXPENSE',
+            description: `Expense: ${description} [${category}]`,
+            date: expense.date,
+            createdBy: req.user.id,
+            lines: [
+                { systemCode: 'GENERAL_EXPENSE', debit: expense.amount },
+                { systemCode: 'CASH', credit: expense.amount }
+            ]
+        });
 
         res.status(StatusCodes.CREATED).json({ status: 'success', data: { expense } });
     } catch (err) {

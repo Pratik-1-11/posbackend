@@ -13,5 +13,10 @@ router.get('/journals', accountingController.getJournalEntries);
 router.get('/accounts', accountingController.getChartOfAccounts);
 router.get('/profit-loss', accountingController.getProfitAndLoss);
 router.get('/trial-balance', accountingController.getTrialBalance);
+router.get('/balance-sheet', accountingController.getBalanceSheet);
+router.get('/aging', accountingController.getCustomerAging);
+router.get('/reconciliations', accountingController.getBankReconciliations);
+router.get('/audit-logs', accountingController.getAccountingAuditLogs);
+router.get('/cash-flow', accountingController.getCashFlowStatement);
 
 export default router;

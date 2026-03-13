@@ -36,11 +36,13 @@ DROP POLICY IF EXISTS "View batches in own tenant" ON public.product_batches;
 CREATE POLICY "View batches in own tenant" ON public.product_batches
 FOR SELECT USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = auth.uid()));
 
--- 4. Profit Analysis View
+-- 4. Profit Analysis View (Enhanced with Invoice Numbers and FIFO batch costs)
+DROP VIEW IF EXISTS public.vw_profit_analysis;
 CREATE OR REPLACE VIEW public.vw_profit_analysis AS
 SELECT 
     si.id as item_id,
     s.id as sale_id,
+    s.invoice_number,
     s.tenant_id,
     s.branch_id,
     s.created_at as sale_date,
@@ -48,10 +50,13 @@ SELECT
     p.name as product_name,
     si.quantity,
     si.unit_price as selling_price,
-    -- Use cost price from batch if available, else from product record
-    COALESCE(pb.cost_price, p.cost_price, 0) as cost_price,
+    -- Use specific batch cost from the sale item junction if it exists
+    COALESCE(pb.cost_price, p.cost_price, 0)::NUMERIC(15, 2) as cost_price,
     (si.unit_price - COALESCE(pb.cost_price, p.cost_price, 0)) * si.quantity as line_profit,
-    ((si.unit_price - COALESCE(pb.cost_price, p.cost_price, 0)) / NULLIF(si.unit_price, 0)) * 100 as profit_margin_percent
+    CASE 
+        WHEN si.unit_price > 0 THEN ((si.unit_price - COALESCE(pb.cost_price, p.cost_price, 0)) / si.unit_price) * 100 
+        ELSE 0 
+    END as profit_margin_percent
 FROM public.sale_items si
 JOIN public.sales s ON si.sale_id = s.id
 JOIN public.products p ON si.product_id = p.id

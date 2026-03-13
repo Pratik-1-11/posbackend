@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import supabase from '../config/supabase.js';
 import { scopeToTenant, addTenantToPayload, ensureTenantOwnership, logTenantAction } from '../utils/tenantQuery.js';
+import { createJournalEntry } from '../utils/accounting.js';
 
 export const list = async (req, res, next) => {
     try {
@@ -60,6 +61,24 @@ export const create = async (req, res, next) => {
 
         // Audit Log
         await logTenantAction(supabase, req, 'CREATE_PURCHASE', 'purchases', purchase.id, { productName, supplierName, quantity });
+
+        // Phase 1: Accounting Integration - Auto-Journal for Purchase
+        // Entry: Debit Inventory (Asset), Credit Cash/Bank (Asset)
+        // Note: For simplicity in Phase 1, we assume cash payment. 
+        // In later phases, we'll check payment_status for AP logic.
+        await createJournalEntry({
+            tenantId: req.tenant.id,
+            branchId: req.user.branch_id,
+            referenceId: purchase.id,
+            referenceType: 'PURCHASE',
+            description: `Purchase: ${productName} (Qty: ${quantity}) from ${supplierName}`,
+            date: purchase.purchase_date,
+            createdBy: req.user.id,
+            lines: [
+                { systemCode: 'INVENTORY', debit: purchase.total_amount },
+                { systemCode: 'CASH', credit: purchase.total_amount }
+            ]
+        });
 
         res.status(StatusCodes.CREATED).json({ status: 'success', data: { purchase } });
     } catch (err) {
