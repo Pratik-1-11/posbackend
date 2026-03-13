@@ -61,8 +61,8 @@ export const createReturn = async (req, res, next) => {
             .eq('is_active', true)
             .single();
 
-        const requiresApproval = (policy?.requires_manager_approval) || 
-                                (totalRefundAmount >= (policy?.min_amount_for_approval || 1000));
+        const requiresApproval = (policy?.requires_manager_approval) ||
+            (totalRefundAmount >= (policy?.min_amount_for_approval || 1000));
 
         // Create return record
         const { data: returnRecord, error: returnError } = await supabase
@@ -153,19 +153,215 @@ export const createReturn = async (req, res, next) => {
     }
 };
 
-// Enhanced return controller with full exchange and policy management
+export const updateReturnStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status, notes } = req.body;
+        const tenantId = req.tenant.id;
+
+        if (!['approved', 'rejected', 'completed', 'canceled'].includes(status)) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Invalid status'
+            });
+        }
+
+        const { data: returnRecord, error: fetchError } = await supabase
+            .from('returns')
+            .select('*')
+            .eq('id', id)
+            .eq('tenant_id', tenantId)
+            .single();
+
+        if (fetchError || !returnRecord) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                status: 'error',
+                message: 'Return not found'
+            });
+        }
+
+        const { data: updatedReturn, error: updateError } = await supabase
+            .from('returns')
+            .update({
+                status,
+                notes: notes || returnRecord.notes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // If newly approved, process the return logic (inventory etc)
+        if (status === 'approved' && returnRecord.status === 'pending') {
+            const { error: processError } = await supabase.rpc('process_pos_return', {
+                p_sale_id: updatedReturn.original_sale_id,
+                p_items: [], // This might need the items from return_items
+                p_reason: updatedReturn.return_reason,
+                p_cashier_id: req.user.id,
+                p_tenant_id: tenantId
+            });
+
+            if (processError) console.error('Error processing approved return:', processError);
+        }
+
+        await logTenantAction(supabase, req, 'UPDATE_RETURN_STATUS', 'returns', id, { status });
+
+        res.json({
+            status: 'success',
+            data: { return: updatedReturn }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const processExchange = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { exchangeItems } = req.body;
+        const tenantId = req.tenant.id;
+
+        // 1. Validate the return exists and is approved
+        const { data: returnRecord, error: returnError } = await supabase
+            .from('returns')
+            .select('*')
+            .eq('id', id)
+            .eq('tenant_id', tenantId)
+            .single();
+
+        if (returnError || !returnRecord) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                status: 'error',
+                message: 'Return not found'
+            });
+        }
+
+        // 2. Insert exchange transactions
+        const transactions = exchangeItems.map(item => ({
+            return_id: id,
+            tenant_id: tenantId,
+            product_id: item.productId,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total_amount: item.quantity * item.unitPrice
+        }));
+
+        const { data: exchangeData, error: exchangeError } = await supabase
+            .from('exchange_transactions')
+            .insert(transactions)
+            .select();
+
+        if (exchangeError) throw exchangeError;
+
+        await logTenantAction(supabase, req, 'PROCESS_EXCHANGE', 'returns', id, { items_count: exchangeItems.length });
+
+        res.json({
+            status: 'success',
+            data: { exchanges: exchangeData }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getReturnStatistics = async (req, res, next) => {
+    try {
+        const tenantId = req.tenant.id;
+        const { startDate, endDate } = req.query;
+
+        let query = supabase
+            .from('returns')
+            .select('status, total_refund_amount, return_type')
+            .eq('tenant_id', tenantId);
+
+        if (startDate) query = query.gte('created_at', startDate);
+        if (endDate) query = query.lte('created_at', endDate);
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        // Calculate basic stats
+        const stats = data.reduce((acc, curr) => {
+            acc.totalCount++;
+            acc.totalAmount += Number(curr.total_refund_amount) || 0;
+            acc.byStatus[curr.status] = (acc.byStatus[curr.status] || 0) + 1;
+            acc.byType[curr.return_type] = (acc.byType[curr.return_type] || 0) + 1;
+            return acc;
+        }, { totalCount: 0, totalAmount: 0, byStatus: {}, byType: {} });
+
+        res.json({
+            status: 'success',
+            data: stats
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getReturnPolicies = async (req, res, next) => {
+    try {
+        const tenantId = req.tenant.id;
+
+        const { data: policies, error } = await supabase
+            .from('return_policies')
+            .select('*')
+            .eq('tenant_id', tenantId);
+
+        if (error) throw error;
+
+        res.json({
+            status: 'success',
+            data: { policies }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateReturnPolicy = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const tenantId = req.tenant.id;
+        const updateData = req.body;
+
+        const { data: policy, error } = await supabase
+            .from('return_policies')
+            .update({
+                ...updateData,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .eq('tenant_id', tenantId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        await logTenantAction(supabase, req, 'UPDATE_RETURN_POLICY', 'return_policies', id, updateData);
+
+        res.json({
+            status: 'success',
+            data: { policy }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 // Get returns list with filtering
 export const getReturns = async (req, res, next) => {
     try {
-        const { 
-            status, 
-            returnType, 
-            customerId, 
-            startDate, 
-            endDate, 
-            page = 1, 
-            limit = 20 
+        const {
+            status,
+            returnType,
+            customerId,
+            startDate,
+            endDate,
+            page = 1,
+            limit = 20
         } = req.query;
 
         const tenantId = req.tenant.id;
