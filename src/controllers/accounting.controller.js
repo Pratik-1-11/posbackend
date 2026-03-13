@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 export const getJournalEntries = async (req, res, next) => {
     try {
