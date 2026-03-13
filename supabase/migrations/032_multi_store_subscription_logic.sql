@@ -182,9 +182,9 @@ BEGIN
   WHERE branch_id = p_branch_id AND product_id = p_product_id;
 
   -- 5. Log movement
-  INSERT INTO public.inventory_movements (
+  INSERT INTO public.stock_movements (
     tenant_id, product_id, user_id, type, quantity, 
-    old_stock, new_stock, reason, created_at
+    previous_stock, new_stock, reason, created_at
   )
   VALUES (
     p_tenant_id, p_product_id, p_user_id, p_type, p_quantity,

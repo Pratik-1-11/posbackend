@@ -379,9 +379,9 @@ export const getReturns = async (req, res, next) => {
         }
 
         // Apply filters
-        if (status) query = query.eq('status', status);
-        if (returnType) query = query.eq('return_type', returnType);
-        if (customerId) query = query.eq('customer_id', customerId);
+        if (status && status !== 'null' && status !== 'undefined') query = query.eq('status', status);
+        if (returnType && returnType !== 'null' && returnType !== 'undefined') query = query.eq('return_type', returnType);
+        if (customerId && customerId !== 'null' && customerId !== 'undefined') query = query.eq('customer_id', customerId);
         if (startDate) query = query.gte('created_at', startDate);
         if (endDate) query = query.lte('created_at', endDate);
 
