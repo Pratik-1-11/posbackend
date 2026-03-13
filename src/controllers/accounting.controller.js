@@ -58,7 +58,7 @@ export const getProfitAndLoss = async (req, res, next) => {
             });
 
         if (error) throw error;
-        res.status(StatusCodes.OK).json({ status: 'success', data: { pnl } });
+        res.status(StatusCodes.OK).json({ status: 'success', data: pnl });
     } catch (err) {
         next(err);
     }
@@ -77,14 +77,21 @@ export const getTrialBalance = async (req, res, next) => {
 
         if (error) throw error;
 
-        // Calculate totals
+        // Calculate totals and flatten for frontend expectation
         const summary = balances.reduce((acc, b) => {
             acc.totalDebit += Number(b.debit_balance);
             acc.totalCredit += Number(b.credit_balance);
             return acc;
         }, { totalDebit: 0, totalCredit: 0 });
 
-        res.status(StatusCodes.OK).json({ status: 'success', data: { balances, summary } });
+        res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: {
+                balances,
+                totalDebit: summary.totalDebit,
+                totalCredit: summary.totalCredit
+            }
+        });
     } catch (err) {
         next(err);
     }
@@ -103,7 +110,7 @@ export const getBalanceSheet = async (req, res, next) => {
 
         if (error) throw error;
 
-        res.status(StatusCodes.OK).json({ status: 'success', data: { balanceSheet } });
+        res.status(StatusCodes.OK).json({ status: 'success', data: balanceSheet });
     } catch (err) {
         next(err);
     }

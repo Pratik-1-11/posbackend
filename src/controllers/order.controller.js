@@ -139,11 +139,13 @@ export const create = async (req, res, next) => {
     if (overrideManagerIds.length > 0) {
       const { data: managers } = await supabase
         .from('profiles')
-        .select('id, role')
+        .select('id, role, full_name')
         .in('id', overrideManagerIds)
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', req.tenant.id)
+        .in('role', ['VENDOR_ADMIN', 'VENDOR_MANAGER', 'BRANCH_ADMIN'])
+        .eq('is_active', true);
 
-      authorizedManagers = (managers || []).filter(m => ['VENDOR_ADMIN', 'VENDOR_MANAGER'].includes(m.role));
+      authorizedManagers = (managers || []).filter(m => ['VENDOR_ADMIN', 'VENDOR_MANAGER', 'BRANCH_ADMIN'].includes(m.role));
 
       if (authorizedManagers.length !== overrideManagerIds.length) {
         return res.status(StatusCodes.UNAUTHORIZED).json({
